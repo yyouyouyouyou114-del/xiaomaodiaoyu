@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小猫钓鱼 - 简化测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        #gameCanvas {
+            border: 2px solid #fff;
+            background: linear-gradient(to bottom, #87CEEB, #4682B4);
+            display: block;
+            margin: 20px auto;
+        }
+        .info {
+            text-align: center;
+            margin: 10px;
+        }
+        .status {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px auto;
+            max-width: 600px;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .success {
+            color: #51cf66;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>🐱 小猫钓鱼游戏 - 组件测试</h1>
+        <p>这是一个简化的测试页面，用于验证各个组件是否正常加载</p>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="status" id="status">
+        <h3>加载状态:</h3>
+        <div id="loadStatus">正在检查组件...</div>
+    </div>
+    
+    <div class="status" id="testResults">
+        <h3>测试结果:</h3>
+        <div id="results"></div>
+    </div>
+
+    <!-- 加载核心文件 -->
+    <script src="src/main.js"></script>
+    <script src="src/animation/AnimationManager.js"></script>
+    <script src="src/scenes/MainMenu.js"></script>
+    
+    <script>
+        // 测试脚本
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusDiv = document.getElementById('loadStatus');
+        const resultsDiv = document.getElementById('results');
+        
+        let testResults = [];
+        
+        function addResult(test, success, message) {
+            testResults.push({test, success, message});
+            updateResults();
+        }
+        
+        function updateResults() {
+            resultsDiv.innerHTML = testResults.map(result => 
+                `<div class="${result.success ? 'success' : 'error'}">
+                    ${result.success ? '✅' : '❌'} ${result.test}: ${result.message}
+                </div>`
+            ).join('');
+        }
+        
+        function updateStatus(message) {
+            statusDiv.innerHTML = message;
+        }
+        
+        // 开始测试
+        async function runTests() {
+            updateStatus('开始测试...');
+            
+            // 测试1: Canvas基础功能
+            try {
+                ctx.fillStyle = '#4ECDC4';
+                ctx.fillRect(50, 50, 100, 50);
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Canvas测试', 100, 80);
+                addResult('Canvas渲染', true, 'Canvas可以正常绘制');
+            } catch (e) {
+                addResult('Canvas渲染', false, e.message);
+            }
+            
+            // 测试2: GameGlobal对象
+            try {
+                if (typeof window.GameGlobal !== 'undefined') {
+                    addResult('GameGlobal对象', true, 'GameGlobal已定义');
+                    console.log('GameGlobal:', window.GameGlobal);
+                } else {
+                    addResult('GameGlobal对象', false, 'GameGlobal未定义');
+                }
+            } catch (e) {
+                addResult('GameGlobal对象', false, e.message);
+            }
+            
+            // 测试3: AnimationManager类
+            try {
+                if (typeof window.AnimationManager !== 'undefined') {
+                    const animManager = new AnimationManager();
+                    addResult('AnimationManager', true, 'AnimationManager可以实例化');
+                } else {
+                    addResult('AnimationManager', false, 'AnimationManager类未定义');
+                }
+            } catch (e) {
+                addResult('AnimationManager', false, e.message);
+            }
+            
+            // 测试4: MainMenuScene类
+            try {
+                if (typeof window.MainMenuScene !== 'undefined') {
+                    const mainMenu = new MainMenuScene(canvas, ctx);
+                    addResult('MainMenuScene', true, 'MainMenuScene可以实例化');
+                    
+                    // 测试渲染
+                    mainMenu.show();
+                    addResult('MainMenu渲染', true, '主菜单可以显示');
+                } else {
+                    addResult('MainMenuScene', false, 'MainMenuScene类未定义');
+                }
+            } catch (e) {
+                addResult('MainMenuScene', false, e.message);
+            }
+            
+            // 测试5: 点击事件
+            try {
+                canvas.addEventListener('click', function(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    addResult('点击事件', true, `点击坐标: (${Math.round(x)}, ${Math.round(y)})`);
+                });
+                addResult('事件监听器', true, '点击事件监听器已绑定');
+            } catch (e) {
+                addResult('事件监听器', false, e.message);
+            }
+            
+            updateStatus('测试完成！点击Canvas测试交互功能。');
+        }
+        
+        // 页面加载完成后运行测试
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>

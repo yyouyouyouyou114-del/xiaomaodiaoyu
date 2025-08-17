@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最小化测试 - 小猫钓鱼</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        canvas {
+            border: 2px solid #fff;
+            display: block;
+            margin: 20px auto;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #87CEEB 0%, #4682B4 30%, #1e3c72 70%, #2a5298 100%);
+        }
+        .info {
+            text-align: center;
+            margin: 20px;
+        }
+        .log {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px auto;
+            font-family: monospace;
+            max-width: 800px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>🐱 最小化游戏测试</h1>
+        <p>测试主菜单是否能正常启动游戏</p>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="log" id="log"></div>
+    
+    <!-- 只加载必要的脚本 -->
+    <script src="src/main.js"></script>
+    <script src="src/scenes/MainMenu.js"></script>
+    
+    <script>
+        const logDiv = document.getElementById('log');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#74c0fc';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // 重定向console
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog(args.join(' '), 'error');
+        };
+        
+        // 等待脚本加载完成
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                console.log('开始初始化游戏...');
+                
+                // 检查GameGlobal
+                if (typeof window.GameGlobal !== 'undefined') {
+                    console.log('✅ GameGlobal已加载');
+                } else {
+                    console.error('❌ GameGlobal未加载');
+                    return;
+                }
+                
+                // 检查MainMenuScene
+                if (typeof MainMenuScene !== 'undefined') {
+                    console.log('✅ MainMenuScene已加载');
+                } else {
+                    console.error('❌ MainMenuScene未加载');
+                    return;
+                }
+                
+                // 创建主菜单
+                try {
+                    const canvas = document.getElementById('gameCanvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    console.log('创建主菜单场景...');
+                    const mainMenu = new MainMenuScene(canvas, ctx);
+                    
+                    // 设置回调
+                    mainMenu.onStartGame = () => {
+                        console.log('🎮 游戏启动回调被触发！', 'success');
+                        
+                        // 清空画布并显示成功信息
+                        ctx.fillStyle = '#51cf66';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 48px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('🎮 游戏启动成功！', canvas.width/2, canvas.height/2 - 50);
+                        ctx.font = '24px Arial';
+                        ctx.fillText('点击事件正常工作', canvas.width/2, canvas.height/2 + 20);
+                    };
+                    
+                    console.log('显示主菜单...');
+                    mainMenu.show();
+                    
+                    console.log('✅ 主菜单初始化完成，请点击开始游戏按钮', 'success');
+                    
+                } catch (error) {
+                    console.error(`❌ 主菜单初始化失败: ${error.message}`);
+                    console.error(error.stack);
+                }
+                
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

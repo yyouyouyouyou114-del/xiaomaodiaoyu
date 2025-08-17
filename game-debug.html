@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏调试 - 小猫钓鱼</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .debug-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .debug-panel {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        canvas {
+            border: 2px solid #fff;
+            display: block;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+        .log {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .status.success { background: rgba(81, 207, 102, 0.3); }
+        .status.error { background: rgba(255, 107, 107, 0.3); }
+        .status.warning { background: rgba(255, 212, 59, 0.3); }
+        button {
+            background: #4ECDC4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45B7B8; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <div class="debug-panel">
+            <h2>🐱 游戏状态调试</h2>
+            <div id="gameStatus"></div>
+            <button onclick="testGameGlobal()">测试GameGlobal</button>
+            <button onclick="testMainMenu()">测试主菜单</button>
+            <button onclick="testClickEvent()">测试点击事件</button>
+            <canvas id="gameCanvas" width="400" height="300"></canvas>
+        </div>
+        
+        <div class="debug-panel">
+            <h2>📋 调试日志</h2>
+            <div class="log" id="debugLog"></div>
+            <button onclick="clearLog()">清空日志</button>
+        </div>
+    </div>
+    
+    <!-- 加载游戏脚本 -->
+    <script src="src/main.js"></script>
+    <script src="src/scenes/MainMenu.js"></script>
+    <script src="src/scenes/GameScene.js"></script>
+    <script src="src/scenes/GameOver.js"></script>
+    <script src="src/entities/Cat.js"></script>
+    <script src="src/entities/Fish.js"></script>
+    <script src="src/entities/Obstacle.js"></script>
+    <script src="src/entities/PowerUp.js"></script>
+    <script src="src/systems/CollisionSystem.js"></script>
+    <script src="src/systems/ScoreSystem.js"></script>
+    <script src="src/systems/Spawner.js"></script>
+    <script src="src/ui/UIManager.js"></script>
+    <script src="src/audio/AudioManager.js"></script>
+    <script src="src/effects/ParticleSystem.js"></script>
+    <script src="src/effects/AnimationManager.js"></script>
+    
+    <script>
+        const logDiv = document.getElementById('debugLog');
+        const statusDiv = document.getElementById('gameStatus');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#74c0fc';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function addStatus(message, type = 'info') {
+            const statusEntry = document.createElement('div');
+            statusEntry.className = `status ${type}`;
+            statusEntry.textContent = message;
+            statusDiv.appendChild(statusEntry);
+        }
+        
+        function clearLog() {
+            logDiv.innerHTML = '';
+        }
+        
+        // 重定向console
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog(args.join(' '), 'error');
+        };
+        
+        // 测试函数
+        function testGameGlobal() {
+            addLog('=== 测试GameGlobal对象 ===');
+            
+            if (typeof window.GameGlobal !== 'undefined') {
+                addLog('✅ GameGlobal存在', 'success');
+                addStatus('GameGlobal: 正常', 'success');
+                
+                // 测试各个组件
+                const components = ['GameConfig', 'GameState', 'SceneManager', 'ResourceManager', 'Utils'];
+                components.forEach(comp => {
+                    if (window.GameGlobal[comp]) {
+                        addLog(`✅ GameGlobal.${comp}存在`, 'success');
+                    } else {
+                        addLog(`❌ GameGlobal.${comp}不存在`, 'error');
+                    }
+                });
+            } else {
+                addLog('❌ GameGlobal不存在', 'error');
+                addStatus('GameGlobal: 错误', 'error');
+            }
+        }
+        
+        function testMainMenu() {
+            addLog('=== 测试主菜单场景 ===');
+            
+            try {
+                const canvas = document.getElementById('gameCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (typeof MainMenuScene !== 'undefined') {
+                    addLog('✅ MainMenuScene类存在', 'success');
+                    
+                    const mainMenu = new MainMenuScene(canvas, ctx);
+                    addLog('✅ MainMenuScene实例化成功', 'success');
+                    addStatus('主菜单: 正常', 'success');
+                    
+                    // 测试回调设置
+                    mainMenu.onStartGame = () => {
+                        addLog('🎮 主菜单回调被触发！', 'success');
+                        addStatus('点击事件: 正常', 'success');
+                    };
+                    
+                    // 显示主菜单
+                    mainMenu.show();
+                    addLog('✅ 主菜单显示成功', 'success');
+                    
+                    // 保存引用供点击测试使用
+                    window.testMainMenu = mainMenu;
+                    
+                } else {
+                    addLog('❌ MainMenuScene类不存在', 'error');
+                    addStatus('主菜单: 错误', 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 主菜单测试失败: ${error.message}`, 'error');
+                addStatus('主菜单: 错误', 'error');
+            }
+        }
+        
+        function testClickEvent() {
+            addLog('=== 测试点击事件 ===');
+            
+            const canvas = document.getElementById('gameCanvas');
+            
+            // 添加测试点击监听器
+            canvas.addEventListener('click', function(event) {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                
+                addLog(`🖱️ 点击坐标: (${x.toFixed(0)}, ${y.toFixed(0)})`, 'success');
+                
+                // 如果主菜单存在，模拟按钮点击
+                if (window.testMainMenu) {
+                    const startButton = window.testMainMenu.elements.startButton;
+                    if (startButton && 
+                        x >= startButton.x && x <= startButton.x + startButton.width &&
+                        y >= startButton.y && y <= startButton.y + startButton.height) {
+                        addLog('🎯 点击了开始按钮区域！', 'success');
+                        if (window.testMainMenu.onStartGame) {
+                            window.testMainMenu.onStartGame();
+                        }
+                    }
+                }
+            });
+            
+            addLog('✅ 点击事件监听器已添加', 'success');
+            addStatus('点击监听: 已激活', 'success');
+        }
+        
+        // 页面加载完成后自动运行测试
+        window.addEventListener('load', function() {
+            addLog('🚀 调试页面加载完成');
+            
+            setTimeout(() => {
+                testGameGlobal();
+                setTimeout(() => {
+                    testMainMenu();
+                    setTimeout(() => {
+                        testClickEvent();
+                    }, 500);
+                }, 500);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

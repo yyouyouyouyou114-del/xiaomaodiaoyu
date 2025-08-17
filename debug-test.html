@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏调试测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        #console {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            font-family: monospace;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>小猫钓鱼游戏调试测试</h1>
+    <div id="testResults"></div>
+    <div id="console"></div>
+
+    <!-- 加载游戏脚本 -->
+    <script src="src/main.js"></script>
+    <script src="src/effects/AnimationManager.js"></script>
+    <script src="src/scenes/MainMenu.js"></script>
+    <script src="src/scenes/GameScene.js"></script>
+    <script src="src/scenes/GameOver.js"></script>
+
+    <script>
+        // 重定向console.log到页面
+        const consoleDiv = document.getElementById('console');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function addToConsole(message, type = 'log') {
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0';
+            div.textContent = `[${type.toUpperCase()}] ${message}`;
+            consoleDiv.appendChild(div);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+
+        // 测试函数
+        function addTestResult(name, success, message) {
+            const resultsDiv = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${success ? 'success' : 'error'}`;
+            div.innerHTML = `<strong>${name}:</strong> ${message}`;
+            resultsDiv.appendChild(div);
+        }
+
+        // 运行测试
+        function runTests() {
+            console.log('开始运行调试测试...');
+
+            // 测试1: GameGlobal是否存在
+            try {
+                if (typeof window.GameGlobal !== 'undefined') {
+                    addTestResult('GameGlobal加载', true, 'GameGlobal对象已成功加载');
+                    console.log('GameGlobal:', window.GameGlobal);
+                } else {
+                    addTestResult('GameGlobal加载', false, 'GameGlobal对象未找到');
+                }
+            } catch (e) {
+                addTestResult('GameGlobal加载', false, `错误: ${e.message}`);
+            }
+
+            // 测试2: 场景类是否存在
+            try {
+                if (typeof MainMenuScene !== 'undefined') {
+                    addTestResult('MainMenuScene类', true, 'MainMenuScene类已加载');
+                } else {
+                    addTestResult('MainMenuScene类', false, 'MainMenuScene类未找到');
+                }
+            } catch (e) {
+                addTestResult('MainMenuScene类', false, `错误: ${e.message}`);
+            }
+
+            try {
+                if (typeof GameScene !== 'undefined') {
+                    addTestResult('GameScene类', true, 'GameScene类已加载');
+                } else {
+                    addTestResult('GameScene类', false, 'GameScene类未找到');
+                }
+            } catch (e) {
+                addTestResult('GameScene类', false, `错误: ${e.message}`);
+            }
+
+            try {
+                if (typeof GameOverScene !== 'undefined') {
+                    addTestResult('GameOverScene类', true, 'GameOverScene类已加载');
+                } else {
+                    addTestResult('GameOverScene类', false, 'GameOverScene类未找到');
+                }
+            } catch (e) {
+                addTestResult('GameOverScene类', false, `错误: ${e.message}`);
+            }
+
+            // 测试3: 尝试创建场景实例
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 750;
+                canvas.height = 1334;
+                const ctx = canvas.getContext('2d');
+
+                if (typeof MainMenuScene !== 'undefined') {
+                    const mainMenu = new MainMenuScene(canvas, ctx);
+                    addTestResult('MainMenuScene实例化', true, 'MainMenuScene实例创建成功');
+                    console.log('MainMenuScene实例:', mainMenu);
+                } else {
+                    addTestResult('MainMenuScene实例化', false, 'MainMenuScene类不存在');
+                }
+            } catch (e) {
+                addTestResult('MainMenuScene实例化', false, `错误: ${e.message}`);
+                console.error('MainMenuScene实例化错误:', e);
+            }
+
+            // 测试4: 检查AnimationManager
+            try {
+                if (typeof window.AnimationManager !== 'undefined') {
+                    addTestResult('AnimationManager', true, 'AnimationManager已加载');
+                } else {
+                    addTestResult('AnimationManager', false, 'AnimationManager未找到');
+                }
+            } catch (e) {
+                addTestResult('AnimationManager', false, `错误: ${e.message}`);
+            }
+
+            console.log('调试测试完成');
+        }
+
+        // 页面加载完成后运行测试
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 1000); // 延迟1秒确保所有脚本加载完成
+        });
+
+        // 捕获所有错误
+        window.addEventListener('error', (event) => {
+            console.error('页面错误:', event.error);
+            addTestResult('页面错误', false, event.error.message);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('未处理的Promise错误:', event.reason);
+            addTestResult('Promise错误', false, event.reason);
+        });
+    </script>
+</body>
+</html>

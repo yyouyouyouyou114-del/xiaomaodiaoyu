@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场景调试 - 小猫钓鱼</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            font-family: Arial, sans-serif;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: block;
+            margin: 0 auto;
+            background: #87CEEB;
+        }
+        
+        #debugInfo {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .debug-line {
+            margin: 2px 0;
+            padding: 2px;
+        }
+        
+        .debug-error {
+            color: red;
+            font-weight: bold;
+        }
+        
+        .debug-success {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .debug-info {
+            color: blue;
+        }
+        
+        .debug-warning {
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="debugInfo">
+        <div class="debug-line debug-info">场景调试开始...</div>
+    </div>
+
+    <!-- 加载所有游戏脚本 -->
+    <script src="src/main.js"></script>
+    <script src="src/scenes/MainMenu.js"></script>
+    <script src="src/scenes/GameScene.js"></script>
+    <script src="src/scenes/GameOver.js"></script>
+    <script src="src/entities/Cat.js"></script>
+    <script src="src/entities/Fish.js"></script>
+    <script src="src/entities/Obstacle.js"></script>
+    <script src="src/entities/PowerUp.js"></script>
+    <script src="src/systems/CollisionSystem.js"></script>
+    <script src="src/systems/ScoreSystem.js"></script>
+    <script src="src/systems/Spawner.js"></script>
+    <script src="src/effects/ParticleSystem.js"></script>
+    <script src="src/effects/AnimationManager.js"></script>
+    <script src="src/audio/AudioManager.js"></script>
+    <script src="src/ui/UIManager.js"></script>
+
+    <script>
+        // 调试日志函数
+        function debugLog(message, type = 'info') {
+            const debugDiv = document.getElementById('debugInfo');
+            const line = document.createElement('div');
+            line.className = `debug-line debug-${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugDiv.appendChild(line);
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(`[DEBUG-${type.toUpperCase()}] ${message}`);
+        }
+        
+        // 重写SceneManager的方法来添加调试信息
+        const originalRegister = window.GameGlobal.SceneManager.register;
+        const originalSwitchTo = window.GameGlobal.SceneManager.switchTo;
+        
+        window.GameGlobal.SceneManager.register = function(name, scene) {
+            debugLog(`注册场景: ${name}`, 'success');
+            debugLog(`场景对象: ${scene.constructor.name}`, 'info');
+            return originalRegister.call(this, name, scene);
+        };
+        
+        window.GameGlobal.SceneManager.switchTo = function(sceneName) {
+            debugLog(`尝试切换到场景: ${sceneName}`, 'info');
+            debugLog(`当前注册的场景: ${Object.keys(this.scenes).join(', ')}`, 'info');
+            
+            if (!this.scenes[sceneName]) {
+                debugLog(`场景不存在: ${sceneName}`, 'error');
+                return;
+            }
+            
+            debugLog(`场景存在，开始切换`, 'success');
+            return originalSwitchTo.call(this, sceneName);
+        };
+        
+        // 游戏主类
+        class CatFishingGame {
+            constructor() {
+                this.canvas = null;
+                this.ctx = null;
+                this.scenes = {};
+                this.sceneManager = null;
+                this.audioManager = null;
+                this.animationManager = null;
+                this.particleSystem = null;
+                this.collisionSystem = null;
+                this.scoreSystem = null;
+                this.spawner = null;
+                this.resourceManager = null;
+                
+                debugLog('游戏实例创建', 'success');
+            }
+            
+            async init() {
+                try {
+                    debugLog('开始初始化游戏', 'info');
+                    
+                    await this.initCanvas();
+                    await this.loadResources();
+                    await this.initSystems();
+                    await this.createScenes();
+                    await this.setupEventListeners();
+                    
+                    // 启动主菜单
+                    debugLog('启动主菜单场景', 'info');
+                    this.sceneManager.switchTo('MainMenu');
+                    
+                    debugLog('游戏初始化完成', 'success');
+                } catch (error) {
+                    debugLog(`初始化错误: ${error.message}`, 'error');
+                    console.error('游戏初始化失败:', error);
+                }
+            }
+            
+            async initCanvas() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                if (!this.canvas || !this.ctx) {
+                    throw new Error('画布初始化失败');
+                }
+                
+                // 更新全局画布引用
+                if (window.GameGlobal) {
+                    window.GameGlobal.canvas = this.canvas;
+                    window.GameGlobal.ctx = this.ctx;
+                }
+                
+                debugLog('画布初始化成功', 'success');
+                return new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            async loadResources() {
+                debugLog('开始加载资源', 'info');
+                // 简化资源加载，避免加载错误
+                return new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            async initSystems() {
+                debugLog('初始化系统', 'info');
+                
+                // 初始化音效和动画系统
+                this.audioManager = new window.AudioManager();
+                this.animationManager = new window.AnimationManager();
+                this.particleSystem = new window.ParticleSystem();
+                
+                // 使用全局场景管理器
+                this.sceneManager = window.GameGlobal.SceneManager;
+                debugLog(`场景管理器引用: ${this.sceneManager ? '成功' : '失败'}`, this.sceneManager ? 'success' : 'error');
+                
+                // 初始化其他系统
+                this.collisionSystem = new window.CollisionSystem();
+                this.scoreSystem = new window.ScoreSystem();
+                this.spawner = new window.Spawner();
+                
+                debugLog('系统初始化完成', 'success');
+                return new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            async createScenes() {
+                debugLog('创建场景', 'info');
+                
+                try {
+                    // 创建主菜单场景
+                    this.scenes.mainMenu = new MainMenuScene(this.canvas, this.ctx);
+                    this.scenes.mainMenu.onStartGame = () => {
+                        debugLog('主菜单回调: 开始游戏', 'info');
+                        this.startGame('normal');
+                    };
+                    debugLog('主菜单场景创建成功', 'success');
+                    
+                    // 创建游戏场景
+                    this.scenes.gameScene = new GameScene(this.canvas, this.ctx);
+                    this.scenes.gameScene.onGameOver = (finalScore) => {
+                        debugLog(`游戏结束回调: 分数 ${finalScore}`, 'info');
+                        this.endGame(finalScore);
+                    };
+                    
+                    // 设置游戏场景的系统引用
+                    if (this.scenes.gameScene && this.scenes.gameScene.setSystems) {
+                        this.scenes.gameScene.setSystems(this.animationManager, this.particleSystem);
+                    }
+                    debugLog('游戏场景创建成功', 'success');
+                    
+                    // 创建游戏结束场景
+                    this.scenes.gameOver = new GameOverScene(this.canvas, this.ctx);
+                    this.scenes.gameOver.onRestartGame = () => {
+                        debugLog('游戏结束回调: 重新开始', 'info');
+                        this.restartGame();
+                    };
+                    this.scenes.gameOver.onReturnToMenu = () => {
+                        debugLog('游戏结束回调: 返回主菜单', 'info');
+                        this.switchToMainMenu();
+                    };
+                    debugLog('游戏结束场景创建成功', 'success');
+                    
+                    // 注册场景到场景管理器
+                    debugLog('开始注册场景到场景管理器', 'info');
+                    this.sceneManager.register('MainMenu', this.scenes.mainMenu);
+                    this.sceneManager.register('GameScene', this.scenes.gameScene);
+                    this.sceneManager.register('GameOver', this.scenes.gameOver);
+                    
+                    debugLog('所有场景注册完成', 'success');
+                    debugLog(`场景管理器中的场景: ${Object.keys(this.sceneManager.scenes).join(', ')}`, 'info');
+                    
+                } catch (error) {
+                    debugLog(`场景创建错误: ${error.message}`, 'error');
+                    throw error;
+                }
+                
+                return new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            async setupEventListeners() {
+                debugLog('设置事件监听器', 'info');
+                return new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            startGame(gameMode) {
+                debugLog(`开始游戏，模式: ${gameMode}`, 'info');
+                
+                // 重置游戏状态
+                window.GameGlobal.GameState.reset();
+                window.GameGlobal.GameState.gameMode = gameMode;
+                
+                // 切换到游戏场景
+                debugLog('切换到游戏场景', 'info');
+                this.sceneManager.switchTo('GameScene');
+                
+                // 启动游戏场景
+                if (this.scenes.gameScene && this.scenes.gameScene.startGame) {
+                    debugLog('调用游戏场景的startGame方法', 'info');
+                    this.scenes.gameScene.startGame(gameMode);
+                } else {
+                    debugLog('游戏场景没有startGame方法', 'warning');
+                }
+            }
+            
+            endGame(finalScore) {
+                debugLog(`游戏结束，最终分数: ${finalScore}`, 'info');
+                this.sceneManager.switchTo('GameOver');
+            }
+            
+            restartGame() {
+                debugLog('重新开始游戏', 'info');
+                this.startGame('normal');
+            }
+            
+            switchToMainMenu() {
+                debugLog('返回主菜单', 'info');
+                this.sceneManager.switchTo('MainMenu');
+            }
+        }
+        
+        // 启动游戏
+        window.addEventListener('load', async () => {
+            debugLog('页面加载完成，开始启动游戏', 'info');
+            
+            try {
+                const game = new CatFishingGame();
+                await game.init();
+            } catch (error) {
+                debugLog(`游戏启动失败: ${error.message}`, 'error');
+                console.error('游戏启动失败:', error);
+            }
+        });
+    </script>
+</body>
+</html>

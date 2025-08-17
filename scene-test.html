@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场景切换测试 - 小猫钓鱼</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            font-family: Arial, sans-serif;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: block;
+            margin: 0 auto;
+            background: #87CEEB;
+        }
+        
+        #debugInfo {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .debug-line {
+            margin: 2px 0;
+            padding: 2px;
+        }
+        
+        .debug-error {
+            color: red;
+            font-weight: bold;
+        }
+        
+        .debug-success {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .debug-info {
+            color: blue;
+        }
+        
+        .debug-warning {
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="debugInfo">
+        <div class="debug-line debug-info">场景切换测试开始...</div>
+    </div>
+
+    <!-- 游戏配置 -->
+    <script>
+        // 游戏全局配置
+        window.GameGlobal = {
+            canvas: null,
+            ctx: null,
+            GameConfig: {
+                CANVAS_WIDTH: 800,
+                CANVAS_HEIGHT: 600,
+                FISHING_SPEED: 200,
+                FISH_SPAWN_RATE: 2.0,
+                OBSTACLE_SPAWN_RATE: 1.0,
+                POWERUP_SPAWN_RATE: 0.5,
+                GAME_DURATION: 60
+            },
+            GameState: {
+                score: 0,
+                timeLeft: 60,
+                isPaused: false,
+                isGameOver: false,
+                gameMode: 'normal'
+            },
+            SceneManager: null
+        };
+        
+        // 调试日志函数
+        function debugLog(message, type = 'info') {
+            const debugDiv = document.getElementById('debugInfo');
+            const line = document.createElement('div');
+            line.className = `debug-line debug-${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugDiv.appendChild(line);
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(`[DEBUG-${type.toUpperCase()}] ${message}`);
+        }
+    </script>
+
+    <!-- 场景管理器 -->
+    <script>
+        class SceneManager {
+            constructor() {
+                this.scenes = new Map();
+                this.currentScene = null;
+                debugLog('场景管理器初始化完成', 'success');
+            }
+            
+            registerScene(name, scene) {
+                this.scenes.set(name, scene);
+                debugLog(`注册场景: ${name}`, 'info');
+            }
+            
+            switchTo(sceneName) {
+                debugLog(`尝试切换到场景: ${sceneName}`, 'info');
+                
+                if (!this.scenes.has(sceneName)) {
+                    debugLog(`场景不存在: ${sceneName}`, 'error');
+                    return false;
+                }
+                
+                // 隐藏当前场景
+                if (this.currentScene) {
+                    debugLog(`隐藏当前场景: ${this.currentScene.constructor.name}`, 'info');
+                    this.currentScene.hide();
+                }
+                
+                // 显示新场景
+                this.currentScene = this.scenes.get(sceneName);
+                debugLog(`显示新场景: ${sceneName}`, 'success');
+                this.currentScene.show();
+                
+                return true;
+            }
+            
+            getCurrentScene() {
+                return this.currentScene;
+            }
+        }
+        
+        window.SceneManager = SceneManager;
+    </script>
+
+    <!-- 简化的主菜单场景 -->
+    <script>
+        class TestMainMenu {
+            constructor(canvas, ctx) {
+                this.canvas = canvas;
+                this.ctx = ctx;
+                this.isVisible = false;
+                this.onStartGame = null;
+                
+                this.startButton = {
+                    x: 300,
+                    y: 400,
+                    width: 200,
+                    height: 60
+                };
+                
+                this.bindEvents();
+                debugLog('主菜单场景创建完成', 'success');
+            }
+            
+            bindEvents() {
+                this.clickHandler = (event) => {
+                    if (!this.isVisible) return;
+                    
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    
+                    debugLog(`点击坐标: (${x}, ${y})`, 'info');
+                    
+                    if (this.isPointInButton(x, y, this.startButton)) {
+                        debugLog('点击了开始游戏按钮', 'success');
+                        this.handleStartGame();
+                    }
+                };
+                
+                this.canvas.addEventListener('click', this.clickHandler);
+            }
+            
+            isPointInButton(x, y, button) {
+                return x >= button.x && x <= button.x + button.width &&
+                       y >= button.y && y <= button.y + button.height;
+            }
+            
+            handleStartGame() {
+                debugLog('处理开始游戏事件', 'info');
+                
+                if (this.onStartGame) {
+                    debugLog('调用 onStartGame 回调', 'info');
+                    this.onStartGame();
+                } else if (GameGlobal.SceneManager) {
+                    debugLog('直接调用场景管理器切换', 'info');
+                    GameGlobal.SceneManager.switchTo('GameScene');
+                } else {
+                    debugLog('没有找到场景切换方法', 'error');
+                }
+            }
+            
+            show() {
+                this.isVisible = true;
+                debugLog('主菜单场景显示', 'success');
+                this.render();
+            }
+            
+            hide() {
+                this.isVisible = false;
+                debugLog('主菜单场景隐藏', 'info');
+            }
+            
+            render() {
+                if (!this.isVisible) return;
+                
+                // 清空画布
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制背景
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(1, '#4682B4');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制标题
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.font = 'bold 48px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('小猫钓鱼', this.canvas.width / 2, 200);
+                
+                // 绘制开始按钮
+                this.ctx.fillStyle = '#FF6B6B';
+                this.ctx.fillRect(this.startButton.x, this.startButton.y, this.startButton.width, this.startButton.height);
+                
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.font = 'bold 24px Arial';
+                this.ctx.fillText('开始游戏', this.startButton.x + this.startButton.width / 2, this.startButton.y + 40);
+                
+                // 绘制调试信息
+                this.ctx.fillStyle = '#000000';
+                this.ctx.font = '16px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText('点击"开始游戏"按钮测试场景切换', 50, 550);
+            }
+        }
+        
+        window.TestMainMenu = TestMainMenu;
+    </script>
+
+    <!-- 简化的游戏场景 -->
+    <script>
+        class TestGameScene {
+            constructor(canvas, ctx) {
+                this.canvas = canvas;
+                this.ctx = ctx;
+                this.isVisible = false;
+                this.animationId = null;
+                
+                debugLog('游戏场景创建完成', 'success');
+            }
+            
+            show() {
+                this.isVisible = true;
+                debugLog('游戏场景显示', 'success');
+                this.startRenderLoop();
+            }
+            
+            hide() {
+                this.isVisible = false;
+                this.stopRenderLoop();
+                debugLog('游戏场景隐藏', 'info');
+            }
+            
+            startGame(gameMode = 'normal') {
+                debugLog(`游戏场景启动，模式: ${gameMode}`, 'success');
+                this.show();
+            }
+            
+            startRenderLoop() {
+                this.renderLoop();
+            }
+            
+            stopRenderLoop() {
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+            }
+            
+            renderLoop() {
+                if (!this.isVisible) return;
+                
+                this.render();
+                this.animationId = requestAnimationFrame(() => this.renderLoop());
+            }
+            
+            render() {
+                if (!this.isVisible) return;
+                
+                // 清空画布
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制水面背景
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(0.3, '#4682B4');
+                gradient.addColorStop(1, '#191970');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制成功信息
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.font = 'bold 36px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('🎣 游戏场景加载成功！', this.canvas.width / 2, 200);
+                
+                this.ctx.font = 'bold 24px Arial';
+                this.ctx.fillText('场景切换正常工作', this.canvas.width / 2, 250);
+                
+                // 绘制小猫
+                this.ctx.fillStyle = '#FFA500';
+                this.ctx.fillRect(100, 100, 60, 60);
+                this.ctx.fillStyle = '#000000';
+                this.ctx.font = '20px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('🐱', 130, 140);
+                
+                // 绘制鱼
+                this.ctx.fillStyle = '#FF69B4';
+                this.ctx.fillRect(300, 400, 40, 20);
+                this.ctx.fillStyle = '#000000';
+                this.ctx.font = '16px Arial';
+                this.ctx.fillText('🐟', 320, 415);
+                
+                this.ctx.fillRect(500, 350, 40, 20);
+                this.ctx.fillText('🐟', 520, 365);
+                
+                // 绘制调试信息
+                this.ctx.fillStyle = '#FFFF00';
+                this.ctx.font = '16px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText('✅ 场景切换测试成功', 50, 550);
+            }
+        }
+        
+        window.TestGameScene = TestGameScene;
+    </script>
+
+    <!-- 主程序 -->
+    <script>
+        function initTest() {
+            debugLog('开始初始化测试', 'info');
+            
+            try {
+                // 初始化画布
+                const canvas = document.getElementById('gameCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (!canvas || !ctx) {
+                    debugLog('画布初始化失败', 'error');
+                    return;
+                }
+                
+                GameGlobal.canvas = canvas;
+                GameGlobal.ctx = ctx;
+                debugLog('画布初始化成功', 'success');
+                
+                // 创建场景管理器
+                const sceneManager = new SceneManager();
+                GameGlobal.SceneManager = sceneManager;
+                
+                // 创建场景
+                const mainMenu = new TestMainMenu(canvas, ctx);
+                const gameScene = new TestGameScene(canvas, ctx);
+                
+                // 注册场景
+                sceneManager.registerScene('MainMenu', mainMenu);
+                sceneManager.registerScene('GameScene', gameScene);
+                
+                // 设置回调
+                mainMenu.onStartGame = () => {
+                    debugLog('执行场景切换回调', 'info');
+                    
+                    // 模拟游戏启动逻辑
+                    if (gameScene.startGame) {
+                        gameScene.startGame('normal');
+                    } else {
+                        sceneManager.switchTo('GameScene');
+                    }
+                };
+                
+                // 启动主菜单
+                debugLog('切换到主菜单场景', 'info');
+                sceneManager.switchTo('MainMenu');
+                
+                debugLog('测试初始化完成', 'success');
+                
+            } catch (error) {
+                debugLog(`初始化错误: ${error.message}`, 'error');
+                console.error('初始化错误:', error);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', initTest);
+    </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Class Loading Test</title>
+</head>
+<body>
+    <h1>Class Loading Test</h1>
+    <div id="output"></div>
+    
+    <!-- Load classes in order -->
+    <script src="src/entities/Cat.js"></script>
+    <script src="src/animation/AnimationManager.js"></script>
+    <script src="src/scenes/GameScene.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            console.log(message);
+            output.innerHTML += message + '<br>';
+        }
+        
+        log('=== Class Loading Test ===');
+        log('window.Cat: ' + (typeof window.Cat));
+        log('window.AnimationManager: ' + (typeof window.AnimationManager));
+        log('window.GameScene: ' + (typeof window.GameScene));
+        
+        if (typeof window.Cat === 'function') {
+            try {
+                const testCat = new window.Cat(100, 100);
+                log('Cat instance created successfully');
+                log('Cat.setAnimationManager: ' + (typeof testCat.setAnimationManager));
+            } catch (error) {
+                log('Error creating Cat: ' + error.message);
+            }
+        }
+        
+        if (typeof window.AnimationManager === 'function') {
+            try {
+                const testAnimationManager = new window.AnimationManager();
+                log('AnimationManager instance created successfully');
+            } catch (error) {
+                log('Error creating AnimationManager: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

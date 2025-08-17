@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复测试 - 小猫钓鱼</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2d3436;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .test-button {
+            background: #00b894;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #00a085;
+        }
+        .error {
+            color: #d63031;
+            font-weight: bold;
+        }
+        .success {
+            color: #00b894;
+            font-weight: bold;
+        }
+        .log {
+            background: #2d3436;
+            color: #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        canvas {
+            border: 2px solid #74b9ff;
+            border-radius: 8px;
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐱 小猫钓鱼游戏修复测试</h1>
+        
+        <div class="test-section">
+            <h3>测试1: 检查错误修复</h3>
+            <button class="test-button" onclick="testErrorFixes()">测试 AnimationManager 修复</button>
+            <button class="test-button" onclick="testFishingRodInit()">测试 FishingRod 初始化</button>
+            <div id="error-test-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>测试2: 游戏功能测试</h3>
+            <button class="test-button" onclick="startGameTest()">启动游戏测试</button>
+            <button class="test-button" onclick="testSceneSwitching()">测试场景切换</button>
+            <canvas id="testCanvas" width="400" height="300" style="display:none;"></canvas>
+            <div id="game-test-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>控制台日志</h3>
+            <div id="console-log" class="log"></div>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+    </div>
+
+    <!-- 加载游戏脚本 -->
+    <script src="src/adapter.js"></script>
+    <script src="src/main.js"></script>
+    <script src="src/animation/AnimationManager.js"></script>
+    <script src="src/entities/Cat.js"></script>
+    <script src="src/entities/Fish.js"></script>
+    <script src="src/entities/Obstacle.js"></script>
+    <script src="src/entities/PowerUp.js"></script>
+    <script src="src/scenes/MainMenu.js"></script>
+    <script src="src/scenes/GameScene.js"></script>
+    <script src="src/scenes/GameOver.js"></script>
+    <script src="src/systems/CollisionSystem.js"></script>
+    <script src="src/systems/ScoreSystem.js"></script>
+    <script src="src/systems/Spawner.js"></script>
+    <script src="src/effects/ParticleSystem.js"></script>
+    <script src="src/audio/AudioManager.js"></script>
+    <script src="src/ui/UIManager.js"></script>
+
+    <script>
+        // 重写 console 方法来捕获日志
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToLog(message, type = 'log') {
+            const logDiv = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            if (type === 'error') logEntry.style.color = '#ff6b6b';
+            if (type === 'warn') logEntry.style.color = '#feca57';
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToLog(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToLog(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToLog(args.join(' '), 'warn');
+        };
+        
+        function clearLog() {
+            document.getElementById('console-log').innerHTML = '';
+        }
+        
+        function testErrorFixes() {
+            const resultDiv = document.getElementById('error-test-result');
+            resultDiv.innerHTML = '<p>正在测试错误修复...</p>';
+            
+            try {
+                // 测试 AnimationManager
+                const animManager = new AnimationManager();
+                console.log('✅ AnimationManager 创建成功');
+                
+                // 测试 Cat 类
+                const canvas = document.getElementById('testCanvas');
+                const ctx = canvas.getContext('2d');
+                const cat = new Cat(100, 100);
+                console.log('✅ Cat 实例创建成功');
+                
+                // 设置动画管理器
+                cat.setAnimationManager(animManager);
+                console.log('✅ AnimationManager 设置成功');
+                
+                // 测试动画方法
+                cat.playCastAnimation();
+                console.log('✅ playCastAnimation 调用成功');
+                
+                cat.playReelAnimation();
+                console.log('✅ playReelAnimation 调用成功');
+                
+                resultDiv.innerHTML = '<p class="success">✅ 所有错误修复测试通过！</p>';
+                
+            } catch (error) {
+                console.error('❌ 错误修复测试失败:', error.message);
+                resultDiv.innerHTML = `<p class="error">❌ 测试失败: ${error.message}</p>`;
+            }
+        }
+        
+        function testFishingRodInit() {
+            const resultDiv = document.getElementById('error-test-result');
+            
+            try {
+                const cat = new Cat(100, 100);
+                
+                // 测试 fishingRod 初始化
+                if (cat.fishingRod) {
+                    console.log('✅ fishingRod 对象已正确初始化');
+                    
+                    // 测试设置 isDropping 属性
+                    const result = cat.startFishing();
+                    if (result) {
+                        console.log('✅ startFishing 成功，isDropping 设置正常');
+                    } else {
+                        console.log('⚠️ startFishing 返回 false，可能已在钓鱼中');
+                    }
+                    
+                    cat.resetFishingRod();
+                    console.log('✅ resetFishingRod 调用成功');
+                    
+                    resultDiv.innerHTML += '<p class="success">✅ FishingRod 初始化测试通过！</p>';
+                } else {
+                    throw new Error('fishingRod 对象未初始化');
+                }
+                
+            } catch (error) {
+                console.error('❌ FishingRod 测试失败:', error.message);
+                resultDiv.innerHTML += `<p class="error">❌ FishingRod 测试失败: ${error.message}</p>`;
+            }
+        }
+        
+        function startGameTest() {
+            const resultDiv = document.getElementById('game-test-result');
+            const canvas = document.getElementById('testCanvas');
+            canvas.style.display = 'block';
+            
+            try {
+                // 初始化游戏全局对象
+                if (!window.GameGlobal) {
+                    window.GameGlobal = {
+                        canvas: canvas,
+                        ctx: canvas.getContext('2d'),
+                        GameConfig: {
+                            FISHING_SPEED: 2,
+                            POWER_UPS: { speed: 1.5 }
+                        },
+                        GameState: {
+                            powerUps: { speed: false }
+                        }
+                    };
+                }
+                
+                console.log('✅ 游戏环境初始化成功');
+                resultDiv.innerHTML = '<p class="success">✅ 游戏测试环境启动成功！</p>';
+                
+            } catch (error) {
+                console.error('❌ 游戏测试失败:', error.message);
+                resultDiv.innerHTML = `<p class="error">❌ 游戏测试失败: ${error.message}</p>`;
+            }
+        }
+        
+        function testSceneSwitching() {
+            const resultDiv = document.getElementById('game-test-result');
+            
+            try {
+                // 测试场景管理器
+                if (window.GameGlobal && window.GameGlobal.SceneManager) {
+                    console.log('✅ SceneManager 可用');
+                    
+                    // 测试场景切换
+                    if (typeof window.GameGlobal.SceneManager.switchTo === 'function') {
+                        console.log('✅ switchTo 方法可用');
+                        resultDiv.innerHTML += '<p class="success">✅ 场景切换功能正常！</p>';
+                    } else {
+                        throw new Error('switchTo 方法不存在');
+                    }
+                } else {
+                    throw new Error('SceneManager 未初始化');
+                }
+                
+            } catch (error) {
+                console.error('❌ 场景切换测试失败:', error.message);
+                resultDiv.innerHTML += `<p class="error">❌ 场景切换测试失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 页面加载完成后自动运行基础测试
+        window.addEventListener('load', function() {
+            console.log('🎮 修复测试页面加载完成');
+            setTimeout(() => {
+                console.log('🔧 开始自动测试...');
+                testErrorFixes();
+                testFishingRodInit();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

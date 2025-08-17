@@ -1,0 +1,28 @@
+{
+  "version": "3.8.0",
+  "name": "小猫钓鱼",
+  "uuid": "db://assets",
+  "type": "3d",
+  "creator": {
+    "version": "3.8.0"
+  },
+  "settings": {
+    "physics": {
+      "enabled": true,
+      "gravity": {
+        "x": 0,
+        "y": -320
+      }
+    },
+    "rendering": {
+      "renderMode": 0
+    }
+  },
+  "assets": {
+    "db://assets": {
+      "name": "assets",
+      "path": "assets",
+      "type": "folder"
+    }
+  }
+}

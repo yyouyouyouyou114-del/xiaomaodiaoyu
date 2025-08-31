@@ -44,7 +44,7 @@ class GameScene {
         
         // 创建小猫对象
         try {
-            this.cat = new window.Cat(this.canvas.width / 2 - 40, 100);
+            this.cat = new window.Cat(canvas.width / 2 - 30, 80);
             console.log('Cat created successfully:', this.cat);
             console.log('Cat setAnimationManager method:', typeof this.cat.setAnimationManager);
             

@@ -52,6 +52,11 @@
             left: 50%;
             transform: translateX(-50%);
             margin: 0;
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
         }
         
         button {
@@ -59,10 +64,11 @@
             color: white;
             border: none;
             padding: 10px 20px;
-            margin: 5px;
+            margin: 0;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            white-space: nowrap;
         }
         
         button:hover {
@@ -155,17 +161,17 @@
     <script src="src/audio/AudioManager.js"></script>
     <script src="src/animation/AnimationManager.js"></script>
     <script src="src/effects/ParticleSystem.js"></script>
-    <script src="src/entities/Cat.js"></script>
-    <script src="src/entities/Fish.js"></script>
-    <script src="src/entities/Obstacle.js"></script>
-    <script src="src/entities/PowerUp.js"></script>
-    <script src="src/systems/Spawner.js"></script>
-    <script src="src/systems/CollisionSystem.js"></script>
-    <script src="src/systems/ScoreSystem.js"></script>
-    <script src="src/ui/UIManager.js"></script>
-    <script src="src/scenes/MainMenu.js"></script>
-    <script src="src/scenes/GameScene.js"></script>
-    <script src="src/scenes/GameOver.js"></script>
+    <script src="src/entities/Cat.js?v=20250131"></script>
+<script src="src/entities/Fish.js?v=20250131"></script>
+<script src="src/entities/Obstacle.js?v=20250131"></script>
+<script src="src/entities/PowerUp.js?v=20250131"></script>
+<script src="src/systems/Spawner.js?v=20250131"></script>
+<script src="src/systems/CollisionSystem.js?v=20250131"></script>
+<script src="src/systems/ScoreSystem.js?v=20250131"></script>
+<script src="src/ui/UIManager.js?v=20250131"></script>
+<script src="src/scenes/MainMenu.js?v=20250131"></script>
+<script src="src/scenes/GameScene.js?v=20250131"></script>
+<script src="src/scenes/GameOver.js?v=20250131"></script>
     
     <script>
         let canvas, ctx, cat, animationManager, audioManager, fishes, fishSpawnTimer;
@@ -559,7 +565,7 @@
                 window.GameGlobal.ctx = ctx;
                 
                 // 创建小猫对象
-                cat = new window.Cat(canvas.width / 2 - 40, 100);
+                cat = new window.Cat(canvas.width / 2 - 30, 80);
                 cat.init(); // 手动调用init方法
                 cat.setAnimationManager(animationManager);
                 debugLog('小猫对象创建成功', 'success');
